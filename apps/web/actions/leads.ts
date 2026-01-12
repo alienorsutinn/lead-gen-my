@@ -9,6 +9,7 @@ export type LeadFilter = {
     minRating?: number;
     hasWebsite?: boolean;
     needsIntervention?: boolean;
+    limit?: number;
 };
 
 // Helper to build where clause
@@ -74,13 +75,33 @@ export async function getLeads(page: number = 1, limit: number = 20, filters: Le
         prisma.place.count({ where })
     ]);
 
-    // Sort by Score (Desc)
-    data.sort((a, b) => (b.leadScores[0]?.score ?? -1) - (a.leadScores[0]?.score ?? -1));
+    // Sort by:
+    // 1. Tier (A > B > C)
+    // 2. Score (Higher first)
+    // 3. Review Count (Higher first)
+    data.sort((a, b) => {
+        const tierOrder: Record<string, number> = { 'A': 0, 'B': 1, 'C': 2 };
+        const tierA = a.leadScores[0]?.tier || 'C';
+        const tierB = b.leadScores[0]?.tier || 'C';
+
+        if (tierOrder[tierA] !== tierOrder[tierB]) {
+            return tierOrder[tierA] - tierOrder[tierB];
+        }
+
+        const scoreA = a.leadScores[0]?.score ?? -1;
+        const scoreB = b.leadScores[0]?.score ?? -1;
+        if (scoreA !== scoreB) return scoreB - scoreA;
+
+        const reviewsA = a.userRatingCount || 0;
+        const reviewsB = b.userRatingCount || 0;
+        return reviewsB - reviewsA;
+    });
 
     // Manual Pagination Slice
-    const paginatedData = data.slice((page - 1) * limit, page * limit);
+    const currentLimit = filters.limit ? Number(filters.limit) : limit;
+    const paginatedData = data.slice((page - 1) * currentLimit, page * currentLimit);
 
-    return { data: paginatedData, total, page, limit };
+    return { data: paginatedData, total, page, limit: currentLimit };
 }
 
 export async function getLeadDetails(id: string) {
