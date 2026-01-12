@@ -128,5 +128,16 @@ model JobRun {
   meta        Json?
   error       String?
 
+
   @@index([jobType, status])
 }
+
+model DailyUsage {
+  id    String   @id @default(uuid())
+  date  String   // YYYY-MM-DD
+  metric String  // DISCOVER, PSI, LLM, SCREENSHOT
+  count Int      @default(0)
+
+  @@unique([date, metric])
+}
+

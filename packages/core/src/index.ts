@@ -6,8 +6,14 @@ export enum LeadStatus {
 }
 
 export enum JobType {
-    SCAN_PLACE = 'SCAN_PLACE',
-    AUDIT_WEBSITE = 'AUDIT_WEBSITE'
+    SCAN_PLACE = 'SCAN_PLACE', // Legacy
+    AUDIT_WEBSITE = 'AUDIT_WEBSITE', // Legacy
+    DISCOVER = 'DISCOVER',
+    WEBSITE_CHECK = 'WEBSITE_CHECK',
+    PSI_AUDIT = 'PSI_AUDIT',
+    SCREENSHOT = 'SCREENSHOT',
+    LLM_VERDICT = 'LLM_VERDICT',
+    SCORE = 'SCORE'
 }
 
 export interface WebsiteAuditResult {
@@ -18,11 +24,6 @@ export interface WebsiteAuditResult {
     socialLinks: string[];
 }
 
-export const calculateScore = (audit: WebsiteAuditResult): number => {
-    let score = 0;
-    if (audit.score > 80) score += 40;
-    if (audit.mobileFriendly) score += 30;
-    if (audit.hasSsl) score += 10;
-    if (audit.loadTimeMs < 2000) score += 20;
-    return score;
-};
+// export const calculateScore = (audit: WebsiteAuditResult): number => { ... } // Legacy
+export * from './scoring';
+

@@ -2,7 +2,7 @@ import { prisma } from '@lead-gen-my/db';
 
 async function getLeads() {
     try {
-        return await prisma.lead.findMany({
+        return await prisma.place.findMany({
             orderBy: { createdAt: 'desc' },
             take: 10
         });
@@ -29,7 +29,7 @@ export default async function Home() {
                             {leads.map(lead => (
                                 <li key={lead.id} className="border-b pb-2">
                                     <div className="font-medium">{lead.name}</div>
-                                    <div className="text-sm text-gray-600">{lead.status}</div>
+                                    <div className="text-sm text-gray-600">{lead.rating ? `Rating: ${lead.rating}` : 'No rating'}</div>
                                 </li>
                             ))}
                         </ul>
