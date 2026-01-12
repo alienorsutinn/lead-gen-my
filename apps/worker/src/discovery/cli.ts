@@ -1,6 +1,7 @@
 import { GooglePlacesApi } from './placesApi';
 import { PrismaClient } from '@lead-gen-my/db';
 import dotenv from 'dotenv';
+import { ReviewService } from '../reviews/service';
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ import fs from 'fs/promises';
 async function main() {
     const args = process.argv.slice(2);
     let queries: string[] = [];
+    const deepReviews = args.includes('--deep-reviews');
 
     // Parse --queries argument
     const queriesIndex = args.indexOf('--queries');
@@ -89,8 +91,12 @@ async function main() {
                     console.log(`Saved/Updated: ${savedPlace.name} (ID: ${savedPlace.id}) - Website: ${savedPlace.websiteUrl || 'N/A'}`);
 
                     // Save Reviews
-                    if (details.reviews && details.reviews.length > 0) {
-                        console.log(`  > Saving ${details.reviews.length} reviews...`);
+                    if (deepReviews && savedPlace.googleMapsUrl) {
+                        console.log(`  > Deep scraping up to 100 reviews for: ${savedPlace.name}...`);
+                        const reviewService = new ReviewService();
+                        await reviewService.fetchReviews(savedPlace.placeId, savedPlace.googleMapsUrl, 100);
+                    } else if (details.reviews && details.reviews.length > 0) {
+                        console.log(`  > Saving ${details.reviews.length} basic reviews from API...`);
                         await prisma.review.deleteMany({ where: { placeId: savedPlace.id } }); // Refresh reviews
 
                         for (const r of details.reviews) {

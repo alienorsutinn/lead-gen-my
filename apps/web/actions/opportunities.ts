@@ -3,7 +3,7 @@
 import { prisma } from '@lead-gen-my/db';
 import { Prisma } from '@prisma/client';
 
-export type LeadFilter = {
+export type OpportunityFilter = {
     search?: string;
     tier?: string;
     minRating?: number;
@@ -16,7 +16,7 @@ export type LeadFilter = {
 };
 
 // Helper to build where clause
-function buildWhere(filters: LeadFilter): Prisma.PlaceWhereInput {
+function buildWhere(filters: OpportunityFilter): Prisma.PlaceWhereInput {
     const where: Prisma.PlaceWhereInput = {};
 
     if (filters.search) {
@@ -39,7 +39,7 @@ function buildWhere(filters: LeadFilter): Prisma.PlaceWhereInput {
     }
 
     if (filters.tier) {
-        where.leadScores = {
+        where.opportunities = {
             some: { tier: filters.tier as any }
         };
     }
@@ -64,21 +64,17 @@ function buildWhere(filters: LeadFilter): Prisma.PlaceWhereInput {
     return where;
 }
 
-export async function getLeads(page: number = 1, limit: number = 20, filters: LeadFilter = {}) {
+export async function getOpportunities(page: number = 1, limit: number = 20, filters: OpportunityFilter = {}) {
     const where = buildWhere(filters);
 
     const [data, total] = await Promise.all([
         prisma.place.findMany({
             where,
             include: {
-                leadScores: { orderBy: { computedAt: 'desc' }, take: 1 },
+                opportunities: { orderBy: { computedAt: 'desc' }, take: 1 },
                 llmVerdicts: { orderBy: { createdAt: 'desc' }, take: 1 },
                 websiteCheck: true
             },
-            // skip: (page - 1) * limit, // Pagination breaks sorting so we fetch all matching constraints then sort/slice
-            // For MVP this is fine if total < 500. If > 500, we should sort in SQL or accept partial sort.
-            // Following user hack: "fetch the leads including latest score, sort in JS"
-            // We'll keep limits for safety but move slice after.
             take: 500, // Fetch more to sort
             orderBy: { createdAt: 'desc' }
         }),
@@ -91,15 +87,15 @@ export async function getLeads(page: number = 1, limit: number = 20, filters: Le
     // 3. Review Count (Higher first)
     data.sort((a, b) => {
         const tierOrder: Record<string, number> = { 'A': 0, 'B': 1, 'C': 2 };
-        const tierA = a.leadScores[0]?.tier || 'C';
-        const tierB = b.leadScores[0]?.tier || 'C';
+        const tierA = a.opportunities[0]?.tier || 'C';
+        const tierB = b.opportunities[0]?.tier || 'C';
 
         if (tierOrder[tierA] !== tierOrder[tierB]) {
             return tierOrder[tierA] - tierOrder[tierB];
         }
 
-        const scoreA = a.leadScores[0]?.score || 0;
-        const scoreB = b.leadScores[0]?.score || 0;
+        const scoreA = a.opportunities[0]?.score || 0;
+        const scoreB = b.opportunities[0]?.score || 0;
         if (scoreA !== scoreB) return scoreB - scoreA;
 
         const reviewsA = a.userRatingCount || 0;
@@ -114,30 +110,35 @@ export async function getLeads(page: number = 1, limit: number = 20, filters: Le
     return { data: paginatedData, total, page, limit: currentLimit };
 }
 
-export async function getLeadDetails(id: string) {
-    return prisma.place.findUnique({
-        where: { id },
+export async function getOpportunityDetails(idOrSlug: string) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+
+    return prisma.place.findFirst({
+        where: isUuid ? { id: idOrSlug } : { slug: idOrSlug },
         include: {
-            leadScores: { orderBy: { computedAt: 'desc' } },
+            opportunities: { orderBy: { computedAt: 'desc' } },
             llmVerdicts: { orderBy: { createdAt: 'desc' } },
             websiteCheck: true,
             psiAudits: { orderBy: { fetchedAt: 'desc' } },
             screenshots: true,
-            leadNotes: { orderBy: { createdAt: 'desc' } },
-            reviews: { orderBy: { createdAt: 'desc' } }
+            notes: { orderBy: { createdAt: 'desc' } },
+            reviews: { orderBy: { createdAt: 'desc' } },
+            uxAudits: { orderBy: { createdAt: 'desc' } },
+            competitorBenchmarks: { orderBy: { createdAt: 'desc' } },
+            opsRecommendations: { orderBy: { createdAt: 'desc' } }
         }
     });
 }
 
-export async function updateLeadStatus(id: string, status: string) {
+export async function updateOpportunityStatus(id: string, status: string) {
     return prisma.place.update({
         where: { id },
         data: { status }
     });
 }
 
-export async function addLeadNote(id: string, content: string) {
-    return prisma.leadNote.create({
+export async function addNote(id: string, content: string) {
+    return prisma.note.create({
         data: {
             placeId: id,
             content
@@ -145,12 +146,12 @@ export async function addLeadNote(id: string, content: string) {
     });
 }
 
-export async function exportLeadsAsCsv(filters: LeadFilter) {
+export async function exportOpportunitiesAsCsv(filters: OpportunityFilter) {
     const where = buildWhere(filters);
     const leads = await prisma.place.findMany({
         where,
         include: {
-            leadScores: { orderBy: { computedAt: 'desc' }, take: 1 },
+            opportunities: { orderBy: { computedAt: 'desc' }, take: 1 },
             llmVerdicts: { orderBy: { createdAt: 'desc' }, take: 1 },
             websiteCheck: true
         },
@@ -161,9 +162,9 @@ export async function exportLeadsAsCsv(filters: LeadFilter) {
     if (!leads.length) return null;
 
     // Header
-    const header = ['Name', 'Address', 'Phone', 'Rating', 'Reviews', 'Website', 'Tier', 'Score', 'Status', 'Intervention', 'Angle', 'Reasons'];
+    const header = ['Name', 'Address', 'Phone', 'Rating', 'Reviews', 'Website', 'Tier', 'Score', 'Value', 'Freshness', 'Type', 'Status', 'Angle', 'Reasons'];
     const rows = leads.map(l => {
-        const score = l.leadScores[0];
+        const opp = l.opportunities[0];
         const verdict = l.llmVerdicts[0];
         let reasons: string[] = [];
         try {
@@ -181,10 +182,12 @@ export async function exportLeadsAsCsv(filters: LeadFilter) {
             l.rating?.toString() || '',
             l.userRatingCount?.toString() || '',
             l.websiteUrl || '',
-            score?.tier || '',
-            score?.score?.toString() || '',
+            opp?.tier || '',
+            opp?.score?.toString() || '',
+            opp?.value || '',
+            opp?.freshness || '',
+            opp?.type || '',
             l.status || 'NEW',
-            verdict?.needsIntervention ? 'YES' : 'NO',
             verdict?.offerAngle || '',
             reasons.join('; ')
         ].map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(','); // Escape CSV

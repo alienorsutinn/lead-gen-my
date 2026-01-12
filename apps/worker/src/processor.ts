@@ -59,7 +59,7 @@ export const processJob = async (job: Job) => {
 
                 const hasBudget = await usageTracker.checkAndIncrement(METRICS.DISCOVER_PLACES, 0); // Check only
                 if (!hasBudget) {
-                    logger.warn({ jobId: job.id, type: job.name }, "Skipping Discovery: Daily Place Limit Reached");
+                    logger.warn({ jobId: job.id, type: job.name }, "Skipping Discovery: Daily Place Limit Reached. (Set MAX_PLACES_DISCOVERED_PER_DAY env var to increase)");
                     return;
                 }
 
@@ -118,7 +118,7 @@ export const processJob = async (job: Job) => {
             case JobType.PSI_AUDIT: {
                 const allowed = await usageTracker.checkAndIncrement(METRICS.PSI_AUDIT, 1);
                 if (!allowed) {
-                    logger.warn("Skipping PSI: Daily Limit Reached");
+                    logger.warn({ jobId: job.id, type: job.name }, "Skipping PSI: Daily Limit Reached. (Set MAX_PSI_CALLS_PER_DAY env var to increase)");
                     return;
                 }
 
@@ -141,7 +141,7 @@ export const processJob = async (job: Job) => {
             case JobType.SCREENSHOT: {
                 const allowed = await usageTracker.checkAndIncrement(METRICS.CAPTURE_SCREENSHOT, 1);
                 if (!allowed) {
-                    logger.warn("Skipping Screenshot: Daily Limit Reached");
+                    logger.warn({ jobId: job.id, type: job.name }, "Skipping Screenshot: Daily Limit Reached. (Set MAX_SCREENSHOTS_PER_DAY env var to increase)");
                     return;
                 }
 
@@ -159,7 +159,7 @@ export const processJob = async (job: Job) => {
             case JobType.LLM_VERDICT: {
                 const allowed = await usageTracker.checkAndIncrement(METRICS.LLM_VERDICT, 1);
                 if (!allowed) {
-                    logger.warn("Skipping LLM: Daily Limit Reached");
+                    logger.warn({ jobId: job.id, type: job.name }, "Skipping LLM: Daily Limit Reached. (Set MAX_LLM_CALLS_PER_DAY env var to increase)");
                     return;
                 }
 

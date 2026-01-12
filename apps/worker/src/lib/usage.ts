@@ -28,6 +28,11 @@ export class UsageTracker {
      * Returns true if allowed, false if cap reached.
      */
     async checkAndIncrement(metric: Metric, incrementBy: number = 1): Promise<boolean> {
+        // In development, we always allow usage to prevent blocking local testing
+        if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+            return true;
+        }
+
         const today = new Date().toISOString().split('T')[0];
         const limit = LIMITS[metric];
 

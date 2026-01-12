@@ -12,6 +12,8 @@
         "@lead-gen-my/core": "*",
         "@lead-gen-my/db": "*",
         "@types/leaflet": "^1.9.21",
+        "bullmq": "^5.66.5",
+        "ioredis": "^5.9.1",
         "leaflet": "^1.9.4",
         "lucide-react": "^0.300.0",
         "next": "14.0.4",

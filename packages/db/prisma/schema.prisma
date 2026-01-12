@@ -10,6 +10,7 @@ datasource db {
 model Place {
   id              String   @id @default(uuid())
   placeId         String   @unique
+  slug            String?  @unique
   name            String
   primaryProblem  String?
   primaryType     String?
@@ -32,9 +33,12 @@ model Place {
   psiAudits       PsiAudit[]
   screenshots     Screenshot[]
   llmVerdicts     LlmVerdict[]
-  leadScores      LeadScore[]
-  leadNotes       LeadNote[]
+  opportunities   Opportunity[]
+  notes           Note[]
   reviews         Review[]
+  uxAudits        UxAudit[]              // [NEW]
+  competitorBenchmarks CompetitorBenchmark[] // [NEW]
+  opsRecommendations OpsRecommendation[] // [NEW]
   
   // Indexing for common queries
   @@index([placeId])
@@ -110,13 +114,19 @@ model LlmVerdict {
   @@index([needsIntervention])
 }
 
-model LeadScore {
+model Opportunity {
   id          String   @id @default(uuid())
   placeId     String
   place       Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
   
   score       Int      // 0-100
   tier        String   // "A", "B", "C"
+  
+  // New derived fields
+  type        String   // "no_website" | "broken_website" | "poor_mobile" | "seo_opportunity"
+  value       String   // "RM 1000 - 3000"
+  freshness   String   // "new" | "aging" | "stale"
+  
   breakdown   String?    // Scoring components (JSON)
   computedAt  DateTime @default(now())
 
@@ -147,7 +157,7 @@ model DailyUsage {
   @@unique([date, metric])
 }
 
-model LeadNote {
+model Note {
   id        String   @id @default(uuid())
   placeId   String
   place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
@@ -173,3 +183,54 @@ model Review {
   @@index([placeId])
 }
 
+
+model UxAudit {
+  id              String   @id @default(uuid())
+  placeId         String
+  place           Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  
+  url             String
+  finalUrl        String?
+  viewport        String   // "mobile" | "desktop"
+  ttcAboveFoldMs  Int?     // Time to contact visible
+  clicksToContact Int?     // 0 = visible, 1 = one click away
+  contactMethods  String?  // JSON list of detected methods
+  blockers        String?  // JSON list of issues (cookie overlay, etc)
+  evidencePngPath String?  // Path to screenshot with outlined elements
+  
+  createdAt       DateTime @default(now())
+
+  @@index([placeId])
+}
+
+model CompetitorBenchmark {
+  id              String   @id @default(uuid())
+  placeId         String
+  place           Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  
+  radiusKm        Float
+  competitors     String?  // JSON list of competitor summaries
+  stats           String?  // JSON stats: density, percentile ranks, gaps
+  
+  createdAt       DateTime @default(now())
+
+  @@index([placeId])
+}
+
+model OpsRecommendation {
+  id              String   @id @default(uuid())
+  placeId         String
+  place           Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  
+  visibilityScore Int      // 0-100
+  conversionScore Int      // 0-100
+  opsScore        Int      // 0-100
+  
+  offerType       String   // "GBP_CONVERSION" | "LEAD_CAPTURE" | "SCALE"
+  reasons         String?  // JSON array of reasons
+  actions         String?  // JSON array of proposed actions
+  
+  createdAt       DateTime @default(now())
+
+  @@index([placeId])
+}

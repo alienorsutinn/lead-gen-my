@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { exportLeadsAsCsv } from '../actions/leads';
+import { exportOpportunitiesAsCsv } from '../actions/opportunities';
 import { Download } from 'lucide-react';
 import { useToast } from './ui/Toast';
 
@@ -17,7 +17,7 @@ export function ExportButton({ filters }: ExportButtonProps) {
         setLoading(true);
         toast('Generating CSV export...', 'info');
         try {
-            const csvData = await exportLeadsAsCsv(filters);
+            const csvData = await exportOpportunitiesAsCsv(filters);
             if (!csvData) {
                 toast('No data to export', 'warning');
                 return;
@@ -27,7 +27,7 @@ export function ExportButton({ filters }: ExportButtonProps) {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `opportunities-${new Date().toISOString().split('T')[0]}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

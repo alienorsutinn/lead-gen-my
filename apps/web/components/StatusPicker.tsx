@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { updateLeadStatus } from '../actions/leads';
+import { updateOpportunityStatus } from '../actions/opportunities';
 import { Badge } from './ui/Badge';
 import { useRouter } from 'next/navigation';
 
@@ -24,7 +24,7 @@ export function StatusPicker({ id, currentStatus }: { id: string; currentStatus:
         setIsUpdating(true);
         setStatus(newStatus);
         try {
-            await updateLeadStatus(id, newStatus);
+            await updateOpportunityStatus(id, newStatus);
             router.refresh(); // Update the server component UI
         } catch (e) {
             console.error('Failed to update status', e);

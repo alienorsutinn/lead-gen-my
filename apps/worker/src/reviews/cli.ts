@@ -6,15 +6,25 @@ const prisma = new PrismaClient();
 async function main() {
     const args = process.argv.slice(2);
     const limitIndex = args.indexOf('--limit');
-    const limit = limitIndex !== -1 ? parseInt(args[limitIndex + 1], 10) : 5;
+    const limit = limitIndex !== -1 ? parseInt(args[limitIndex + 1], 10) : 10;
 
-    console.log(`Starting Review Scraper (Limit: ${limit})...`);
+    const countIndex = args.indexOf('--count');
+    const targetCount = countIndex !== -1 ? parseInt(args[countIndex + 1], 10) : 100;
 
-    // Find places with Google Maps URL but no reviews yet (or just update recent ones)
+    console.log(`Starting Review Scraper (Places Limit: ${limit}, Review Target: ${targetCount})...`);
+
+    // Find places with Google Maps URL but no deep reviews yet (heuristically check if they have < 10 reviews)
     const places = await prisma.place.findMany({
         where: {
             googleMapsUrl: { not: null },
-            reviews: { none: {} }
+        },
+        include: {
+            _count: {
+                select: { reviews: true }
+            }
+        },
+        orderBy: {
+            createdAt: 'desc'
         },
         take: limit
     });
@@ -25,7 +35,8 @@ async function main() {
 
     for (const place of places) {
         if (!place.googleMapsUrl) continue;
-        await service.fetchReviews(place.id, place.googleMapsUrl);
+        console.log(`\n--- ${place.name} (${place.id}) ---`);
+        await service.fetchReviews(place.id, place.googleMapsUrl, targetCount);
     }
 
     // Close browser if service keeps one open (our impl opens per call currently)

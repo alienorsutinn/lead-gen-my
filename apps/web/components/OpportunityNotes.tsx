@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { addLeadNote } from '../actions/leads';
+import { addNote } from '../actions/opportunities';
 import { useRouter } from 'next/navigation';
 
-export function LeadNotes({ id, notes }: { id: string; notes: any[] }) {
+export function OpportunityNotes({ id, notes }: { id: string; notes: any[] }) {
     const [content, setContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const router = useRouter();
@@ -15,7 +15,7 @@ export function LeadNotes({ id, notes }: { id: string; notes: any[] }) {
 
         setIsSaving(true);
         try {
-            await addLeadNote(id, content);
+            await addNote(id, content);
             setContent('');
             router.refresh();
         } catch (err) {
@@ -28,7 +28,7 @@ export function LeadNotes({ id, notes }: { id: string; notes: any[] }) {
     return (
         <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm mt-10">
             <h3 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
-                <span className="p-2 bg-slate-100 rounded-xl">📝</span> Internal Sales History
+                <span className="p-2 bg-slate-100 rounded-xl">📝</span> Internal Opportunity History
             </h3>
 
             <form onSubmit={handleSubmit} className="mb-10 space-y-4">
@@ -60,7 +60,7 @@ export function LeadNotes({ id, notes }: { id: string; notes: any[] }) {
                     </div>
                 )) : (
                     <div className="py-10 text-center text-slate-400 font-bold italic">
-                        No internal history logged yet for this lead.
+                        No internal history logged yet for this opportunity.
                     </div>
                 )}
             </div>

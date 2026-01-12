@@ -8,10 +8,12 @@
         "worker:check-websites": "ts-node src/websites/cli.ts",
         "worker:psi": "ts-node src/psi/cli.ts",
         "worker:screenshots": "ts-node src/screenshots/cli.ts",
+        "worker:ux": "ts-node src/ux/cli.ts",
         "worker:llm": "ts-node src/llm/cli.ts",
         "worker:score": "ts-node src/scoring/cli.ts",
         "worker:reviews": "ts-node src/reviews/cli.ts",
         "worker:pipeline": "ts-node src/pipeline/cli.ts",
+        "worker:analyze": "ts-node src/analysis/cli.ts",
         "build": "tsc",
         "test": "vitest run"
     },
