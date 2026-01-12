@@ -2,6 +2,11 @@ import { PrismaClient } from '@lead-gen-my/db';
 import { PsiService } from './psiApi';
 import dotenv from 'dotenv';
 
+import path from 'path';
+
+// Load root .env first (shared keys)
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+// Load local .env (worker specific overrides)
 dotenv.config();
 
 const prisma = new PrismaClient();

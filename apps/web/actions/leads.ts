@@ -123,7 +123,8 @@ export async function getLeadDetails(id: string) {
             websiteCheck: true,
             psiAudits: { orderBy: { fetchedAt: 'desc' } },
             screenshots: true,
-            leadNotes: { orderBy: { createdAt: 'desc' } }
+            leadNotes: { orderBy: { createdAt: 'desc' } },
+            reviews: { orderBy: { createdAt: 'desc' } }
         }
     });
 }

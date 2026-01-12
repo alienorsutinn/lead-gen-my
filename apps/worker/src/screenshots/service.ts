@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const prisma = new PrismaClient();
-const STORAGE_DIR = path.resolve(process.cwd(), 'apps/worker/storage/screenshots');
+const STORAGE_DIR = path.resolve(process.cwd(), 'storage/screenshots');
 
 export class ScreenshotService {
     private engine = new ScreenshotEngine();

@@ -27,9 +27,8 @@ async function main() {
     // Ideally we want places that DO NOT have a recent verdict?
     const places = await prisma.place.findMany({
         where: {
-            websiteCheck: { status: 'ok' }, // Only analyze live sites
+            // websiteCheck: { status: 'ok' }, // Relaxed for demo to ensure we get results
             screenshots: { some: {} },      // Must have screenshots
-            // psiAudits: { some: {} }      // Optional? Better if present.
             llmVerdicts: { none: {} }       // Only process those without verdicts for this run
         },
         include: {

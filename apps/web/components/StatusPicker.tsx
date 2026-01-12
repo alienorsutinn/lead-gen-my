@@ -36,12 +36,12 @@ export function StatusPicker({ id, currentStatus }: { id: string; currentStatus:
     return (
         <div className="flex flex-col gap-2 p-6 bg-slate-900 rounded-[2rem] text-white shadow-xl">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Current Sales Stage</label>
-            <div className="flex items-center gap-3">
+            <div className="relative">
                 <select
                     value={status}
                     onChange={(e) => handleChange(e.target.value)}
                     disabled={isUpdating}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-bold outline-none cursor-pointer transition-colors flex-1"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 >
                     {statuses.map(s => (
                         <option key={s.value} value={s.value} className="text-slate-900 font-bold">
@@ -49,7 +49,12 @@ export function StatusPicker({ id, currentStatus }: { id: string; currentStatus:
                         </option>
                     ))}
                 </select>
-                <Badge variant={current.variant} className="py-2 px-4 shadow-lg">{current.label}</Badge>
+                <div className="w-full">
+                    <Badge variant={current.variant} className="w-full justify-between py-3 px-4 shadow-lg text-sm">
+                        {current.label}
+                        <span className="ml-2 text-[10px] opacity-60">▼</span>
+                    </Badge>
+                </div>
             </div>
             {isUpdating && <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-1 animate-pulse px-1">Syncing with HQ...</div>}
         </div>

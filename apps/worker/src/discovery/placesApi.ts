@@ -31,6 +31,15 @@ interface PlaceDetails {
         latitude: number;
         longitude: number;
     };
+    reviews?: Array<{
+        name: string;
+        relativePublishTimeDescription: string;
+        rating: number;
+        text: { text: string; languageCode: string };
+        originalText: { text: string; languageCode: string };
+        authorAttribution: { displayName: string; uri: string; photoUri: string };
+        publishTime: string;
+    }>;
 }
 
 export class GooglePlacesApi {
@@ -75,37 +84,43 @@ export class GooglePlacesApi {
         }
     }
 
-    async textSearch(query: string, regionCode = 'MY', languageCode = 'en'): Promise<PlaceResult[]> {
+    async textSearch(query: string, regionCode = 'MY', languageCode = 'en', pageToken?: string): Promise<{ places: PlaceResult[], nextPageToken?: string }> {
         const url = 'https://places.googleapis.com/v1/places:searchText';
 
-        const body = {
+        const body: any = {
             textQuery: query,
             regionCode: regionCode,
             languageCode: languageCode
         };
+
+        if (pageToken) {
+            body.pageToken = pageToken;
+        }
 
         const options: RequestInit = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY || '',
-                'X-Goog-FieldMask': 'places.id,places.displayName,places.primaryType'
+                'X-Goog-FieldMask': 'places.id,places.displayName,places.primaryType,nextPageToken'
             },
             body: JSON.stringify(body)
         };
 
         try {
             const data = await this.fetchWithRetry(url, options);
-            if (!data.places) return [];
+            if (!data.places) return { places: [] };
 
-            return data.places.map((p: any) => ({
+            const places = data.places.map((p: any) => ({
                 placeId: p.id,
-                name: p.displayName?.text,     // ✅ correct
+                name: p.displayName?.text,
                 primaryType: p.primaryType
             }));
+
+            return { places, nextPageToken: data.nextPageToken };
         } catch (err) {
             console.error(`Failed to search places for query "${query}":`, err);
-            return [];
+            return { places: [] };
         }
     }
 
@@ -123,7 +138,8 @@ export class GooglePlacesApi {
             'rating',
             'userRatingCount',
             'googleMapsUri',
-            'location'
+            'location',
+            'reviews'
         ];
 
         const options: RequestInit = {
@@ -137,6 +153,8 @@ export class GooglePlacesApi {
 
         try {
             const data = await this.fetchWithRetry(url, options);
+            console.log(`[DEBUG] getPlaceDetails(${placeId}) keys:`, Object.keys(data));
+            if (data.reviews) console.log(`[DEBUG] Reviews count: ${data.reviews.length}`);
             return data as PlaceDetails;
         } catch (err) {
             console.error(`Failed to get details for placeId "${placeId}":`, err);

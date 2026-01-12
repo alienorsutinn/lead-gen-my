@@ -8,6 +8,7 @@ export interface VerdictInput {
     desktopScreenshotBase64?: string;
     websiteCheck: any;
     psi: any;
+    reviews?: Array<{ text: string; rating: number; author: string }>;
 }
 
 export interface LLMClient {
@@ -45,6 +46,21 @@ export class GeminiClient implements LLMClient {
         const promptParts: any[] = [
             `Analyze this business website.\n\nContext:\nWebsite Check: ${JSON.stringify(input.websiteCheck)}\nPSI Metrics: ${JSON.stringify(input.psi)}`
         ];
+
+        if (input.reviews && input.reviews.length > 0) {
+            promptParts[0] += `\n\nRecent Customer Reviews:\n${JSON.stringify(input.reviews)}\nIMPORTANT: Analyze these reviews for recurring complaints or praise to inform the 'offer_angle' and 'reasons'.`;
+        }
+
+        // WhatsApp-First Strategy for No-Website Leads
+        const isNoWebsite = !input.websiteCheck || input.websiteCheck.status === 'no_website' || input.websiteCheck.status === 'broken';
+        if (isNoWebsite) {
+            promptParts[0] += `\n\nCRITICAL CONTEXT: This business has NO functional website. 
+DO NOT recommend "Build a generic website".
+INSTEAD, recommend a "WhatsApp-First Lead Capture Funnel".
+The angle must be: "Missed Call = Lost Revenue".
+Sell the value of a simple 1-page mobile site that captures leads via WhatsApp when they can't answer the phone.
+Key Benefits to highlight: 24/7 capture, simple quote form, immediate trust proof.`;
+        }
 
         if (input.mobileScreenshotBase64) {
             promptParts.push({
