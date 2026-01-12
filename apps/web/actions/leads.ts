@@ -105,7 +105,14 @@ export async function exportLeadsAsCsv(filters: LeadFilter) {
     const rows = leads.map(l => {
         const score = l.leadScores[0];
         const verdict = l.llmVerdicts[0];
-        const reasons = (verdict?.reasons as any as string[]) || [];
+        let reasons: string[] = [];
+        try {
+            if (verdict?.reasons) {
+                reasons = JSON.parse(verdict.reasons);
+            }
+        } catch (e) {
+            reasons = [];
+        }
 
         return [
             l.name,

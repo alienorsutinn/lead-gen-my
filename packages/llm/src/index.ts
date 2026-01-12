@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { VerdictSchema, Verdict } from './schemas';
 import { VERDICT_SYSTEM_PROMPT } from './prompts';
 import { z } from 'zod';
@@ -14,63 +14,64 @@ export interface LLMClient {
     generateVerdict(input: VerdictInput): Promise<{ verdict: Verdict; model: string; raw: any }>;
 }
 
-export class OpenAIClient implements LLMClient {
-    private client: OpenAI;
-    private model = 'gpt-4o'; // Use consistent version in prod
+export class GeminiClient implements LLMClient {
+    private genAI: GoogleGenerativeAI;
+    private model = 'gemini-2.0-flash';
 
     constructor(apiKey: string) {
-        this.client = new OpenAI({ apiKey });
+        this.genAI = new GoogleGenerativeAI(apiKey);
     }
 
     async generateVerdict(input: VerdictInput): Promise<{ verdict: Verdict; model: string; raw: any }> {
-        const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-            {
-                role: 'system',
-                content: VERDICT_SYSTEM_PROMPT
+        const model = this.genAI.getGenerativeModel({
+            model: this.model,
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        needs_intervention: { type: SchemaType.BOOLEAN },
+                        severity: { type: SchemaType.STRING },
+                        reasons: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                        quick_wins: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                        offer_angle: { type: SchemaType.STRING }
+                    },
+                    required: ["needs_intervention", "severity", "reasons", "quick_wins", "offer_angle"]
+                }
             },
-            {
-                role: 'user',
-                content: [
-                    {
-                        type: 'text',
-                        text: `Analyze this business website.\n\nContext:\nWebsite Check: ${JSON.stringify(input.websiteCheck)}\nPSI Metrics: ${JSON.stringify(input.psi)}`
-                    }
-                ]
-            }
+            systemInstruction: VERDICT_SYSTEM_PROMPT
+        });
+
+        const promptParts: any[] = [
+            `Analyze this business website.\n\nContext:\nWebsite Check: ${JSON.stringify(input.websiteCheck)}\nPSI Metrics: ${JSON.stringify(input.psi)}`
         ];
 
-        // Add images if available
         if (input.mobileScreenshotBase64) {
-            (messages[1].content as any[]).push({
-                type: 'image_url',
-                image_url: {
-                    url: `data:image/png;base64,${input.mobileScreenshotBase64}`,
-                    detail: 'high' // Necessary for text reading? 'low' might save tokens but 'high' is better for design auditing
+            promptParts.push({
+                inlineData: {
+                    data: input.mobileScreenshotBase64,
+                    mimeType: "image/png"
                 }
             });
         }
+
         if (input.desktopScreenshotBase64) {
-            (messages[1].content as any[]).push({
-                type: 'image_url',
-                image_url: {
-                    url: `data:image/png;base64,${input.desktopScreenshotBase64}`,
-                    detail: 'low' // Desktop overview, low might suffice
+            promptParts.push({
+                inlineData: {
+                    data: input.desktopScreenshotBase64,
+                    mimeType: "image/png"
                 }
             });
         }
 
         try {
-            const response = await this.client.chat.completions.create({
-                model: this.model,
-                messages: messages,
-                max_tokens: 1000,
-                response_format: { type: 'json_object' }
-            });
+            const result = await model.generateContent(promptParts);
+            const response = result.response;
+            const text = response.text();
 
-            const rawContent = response.choices[0].message.content;
-            if (!rawContent) throw new Error('Empty response from LLM');
+            if (!text) throw new Error('Empty response from Gemini');
 
-            const parsed = JSON.parse(rawContent);
+            const parsed = JSON.parse(text);
             const verdict = VerdictSchema.parse(parsed);
 
             return {
@@ -80,13 +81,12 @@ export class OpenAIClient implements LLMClient {
             };
 
         } catch (error) {
-            console.error('LLM Verdict Generation Failed:', error);
-            // Simple retry logic could be added here or in the caller
+            console.error('Gemini Verdict Generation Failed:', error);
             throw error;
         }
     }
 }
 
 export const createLLMClient = (apiKey: string): LLMClient => {
-    return new OpenAIClient(apiKey);
+    return new GeminiClient(apiKey);
 };

@@ -7,18 +7,37 @@ dotenv.config();
 const prisma = new PrismaClient();
 const api = new GooglePlacesApi();
 
+import fs from 'fs/promises';
+
+// ... imports ...
+
 async function main() {
     const args = process.argv.slice(2);
     let queries: string[] = [];
 
-    // Simple argument parsing for --queries "q1" "q2"
+    // Parse --queries argument
     const queriesIndex = args.indexOf('--queries');
     if (queriesIndex !== -1) {
         queries = args.slice(queriesIndex + 1);
     }
 
+    // Parse --queriesFile argument
+    const fileIndex = args.indexOf('--queriesFile');
+    if (fileIndex !== -1 && args[fileIndex + 1]) {
+        try {
+            const raw = await fs.readFile(args[fileIndex + 1], 'utf-8');
+            const json = JSON.parse(raw);
+            if (Array.isArray(json)) {
+                queries = queries.concat(json.map((q: any) => q.query));
+            }
+        } catch (err) {
+            console.error('Failed to read queries file:', err);
+            process.exit(1);
+        }
+    }
+
     if (queries.length === 0) {
-        console.error('Usage: npm run worker:discover -- --queries "query 1" "query 2"');
+        console.error('Usage: npm run worker:discover -- --queries "query 1" OR --queriesFile data/queries.json');
         process.exit(1);
     }
 

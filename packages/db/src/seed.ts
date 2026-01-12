@@ -48,17 +48,17 @@ async function main() {
                 create: {
                     score: 95,
                     tier: 'A',
-                    breakdown: {
+                    breakdown: JSON.stringify({
                         details: 'High intent, strong digial presence'
-                    }
+                    })
                 }
             },
             llmVerdicts: {
                 create: {
                     needsIntervention: false,
                     severity: 'low',
-                    reasons: ['Good website', 'Active social media'],
-                    quickWins: [],
+                    reasons: JSON.stringify(['Good website', 'Active social media']),
+                    quickWins: JSON.stringify([]),
                     offerAngle: 'Upsell advanced SEO'
                 }
             }
@@ -88,17 +88,17 @@ async function main() {
                 create: {
                     score: 40,
                     tier: 'C',
-                    breakdown: {
+                    breakdown: JSON.stringify({
                         details: 'No working website, low ratings'
-                    }
+                    })
                 }
             },
             llmVerdicts: {
                 create: {
                     needsIntervention: true,
                     severity: 'high',
-                    reasons: ['Website down', 'Low ratings'],
-                    quickWins: ['Build landing page', 'Claim GMB listing'],
+                    reasons: JSON.stringify(['Website down', 'Low ratings']),
+                    quickWins: JSON.stringify(['Build landing page', 'Claim GMB listing']),
                     offerAngle: 'Complete digital transformation package'
                 }
             }

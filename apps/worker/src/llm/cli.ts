@@ -7,12 +7,12 @@ import path from 'path';
 dotenv.config();
 
 const prisma = new PrismaClient();
-const apiKey = process.env.OPENAI_API_KEY || '';
+const apiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || '';
 const llmClient = createLLMClient(apiKey);
 
 async function main() {
     if (!apiKey) {
-        console.error("OPENAI_API_KEY not set.");
+        console.error("LLM_API_KEY (or OPENAI_API_KEY) not set.");
         process.exit(1);
     }
 
@@ -94,8 +94,8 @@ async function main() {
                     modelName: result.model,
                     needsIntervention: result.verdict.needs_intervention,
                     severity: result.verdict.severity,
-                    reasons: result.verdict.reasons as any, // Json type
-                    quickWins: result.verdict.quick_wins as any, // Json type
+                    reasons: JSON.stringify(result.verdict.reasons),
+                    quickWins: JSON.stringify(result.verdict.quick_wins),
                     offerAngle: result.verdict.offer_angle
                 }
             });

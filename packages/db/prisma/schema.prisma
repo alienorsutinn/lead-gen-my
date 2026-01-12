@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -66,7 +66,7 @@ model PsiAudit {
   accessibility Int?
   bestPractices Int?
   
-  rawJson       Json?    // Optional full report
+  rawJson       String?    // Optional full report (JSON string)
   fetchedAt     DateTime @default(now())
   
   @@index([placeId])
@@ -93,8 +93,8 @@ model LlmVerdict {
   url                 String?
   needsIntervention   Boolean  @default(false)
   severity            String?  // "low", "medium", "high"
-  reasons             Json?    // Array of strings
-  quickWins           Json?    // Array of strings
+  reasons             String?    // Array of strings (JSON)
+  quickWins           String?    // Array of strings (JSON)
   offerAngle          String?  // Suggested pitch
   modelName           String?
   
@@ -111,7 +111,7 @@ model LeadScore {
   
   score       Int      // 0-100
   tier        String   // "A", "B", "C"
-  breakdown   Json?    // Scoring components
+  breakdown   String?    // Scoring components (JSON)
   computedAt  DateTime @default(now())
 
   @@index([placeId])
@@ -125,7 +125,7 @@ model JobRun {
   status      String   // "running", "completed", "failed"
   startedAt   DateTime @default(now())
   finishedAt  DateTime?
-  meta        Json?
+  meta        String?  // JSON string
   error       String?
 
 

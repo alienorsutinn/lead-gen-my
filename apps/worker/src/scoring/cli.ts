@@ -63,7 +63,7 @@ async function main() {
                     placeId: place.id,
                     score: result.score,
                     tier: result.tier,
-                    breakdown: result.breakdown as any // JSON
+                    breakdown: JSON.stringify(result.breakdown) // JSON
                 }
             });
             // To prevent infinite history, maybe we should delete old or just keep creating?

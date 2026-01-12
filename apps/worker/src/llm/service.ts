@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const prisma = new PrismaClient();
-const apiKey = process.env.OPENAI_API_KEY || '';
+const apiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || '';
 // In a real app we might want to handle missing key more gracefully or throw early
 const llmClient = createLLMClient(apiKey);
 
@@ -67,8 +67,8 @@ export class LlmVerdictService {
                     modelName: result.model,
                     needsIntervention: result.verdict.needs_intervention,
                     severity: result.verdict.severity,
-                    reasons: result.verdict.reasons as any,
-                    quickWins: result.verdict.quick_wins as any,
+                    reasons: JSON.stringify(result.verdict.reasons),
+                    quickWins: JSON.stringify(result.verdict.quick_wins),
                     offerAngle: result.verdict.offer_angle
                 }
             });

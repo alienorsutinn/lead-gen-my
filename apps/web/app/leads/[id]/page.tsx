@@ -13,7 +13,14 @@ export default async function LeadDetailsPage({ params }: { params: { id: string
     const mobileAudit = lead.psiAudits.find(a => a.strategy === 'mobile');
     const screenshots = lead.screenshots;
 
-    const reasons = (verdict?.reasons as any as string[]) || [];
+    let reasons: string[] = [];
+    try {
+        if (verdict?.reasons) {
+            reasons = JSON.parse(verdict.reasons);
+        }
+    } catch (e) {
+        reasons = [];
+    }
 
     return (
         <div className="container mx-auto p-6">

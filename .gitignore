@@ -11,3 +11,8 @@ coverage
 .nyc_output
 .DS_Store
 *.pem
+*.db
+*.sqlite
+*.log
+apps/worker/storage/screenshots/*
+!apps/worker/storage/screenshots/.gitkeep

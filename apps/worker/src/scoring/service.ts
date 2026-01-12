@@ -50,7 +50,7 @@ export class LeadScoringService {
                 placeId: place.id,
                 score: result.score,
                 tier: result.tier,
-                breakdown: result.breakdown as any
+                breakdown: JSON.stringify(result.breakdown)
             }
         });
 

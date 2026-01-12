@@ -11,7 +11,8 @@
         "worker:llm": "ts-node src/llm/cli.ts",
         "worker:score": "ts-node src/scoring/cli.ts",
         "worker:pipeline": "ts-node src/pipeline/cli.ts",
-        "build": "tsc"
+        "build": "tsc",
+        "test": "vitest run"
     },
     "dependencies": {
         "@lead-gen-my/core": "*",

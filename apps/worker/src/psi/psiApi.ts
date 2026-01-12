@@ -93,7 +93,7 @@ export class PsiService {
                     seo: result.seo,
                     accessibility: result.accessibility,
                     bestPractices: result.bestPractices,
-                    rawJson: result.rawJson || undefined
+                    rawJson: result.rawJson ? JSON.stringify(result.rawJson) : undefined
                 }
             });
 
