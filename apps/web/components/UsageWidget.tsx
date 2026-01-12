@@ -20,15 +20,15 @@ export function UsageWidget() {
     }, []);
 
     const metrics = [
-        { key: 'DISCOVER_PLACES', label: 'Places Discovered' },
-        { key: 'PSI_AUDIT', label: 'PSI Audits' },
-        { key: 'CAPTURE_SCREENSHOT', label: 'Screenshots' },
-        { key: 'LLM_VERDICT', label: 'LLM Verdicts' },
+        { key: 'DISCOVER_PLACES', label: 'Market Discovery' },
+        { key: 'PSI_AUDIT', label: 'Experience Checks' },
+        { key: 'CAPTURE_SCREENSHOT', label: 'Proof Captures' },
+        { key: 'LLM_VERDICT', label: 'Strategy Audits' },
     ];
 
     return (
-        <div className="bg-white p-4 rounded-lg shadow border mb-6">
-            <h3 className="font-semibold mb-4 text-gray-700">Daily Usage Safety Caps</h3>
+        <div className="bg-white p-6 rounded-[1.5rem] shadow-sm border border-slate-100 mb-8">
+            <h3 className="font-black mb-6 text-slate-900 uppercase tracking-widest text-[10px]">Daily Strategy Capacity</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {metrics.map(m => {
                     const current = usage[m.key] || 0;

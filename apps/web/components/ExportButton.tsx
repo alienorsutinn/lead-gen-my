@@ -2,16 +2,24 @@
 
 import { useState } from 'react';
 import { exportLeadsAsCsv } from '../actions/leads';
+import { Download } from 'lucide-react';
+import { useToast } from './ui/Toast';
 
-export function ExportButton({ filters }: { filters: any }) {
+interface ExportButtonProps {
+    filters: any;
+}
+
+export function ExportButton({ filters }: ExportButtonProps) {
     const [loading, setLoading] = useState(false);
+    const { toast } = useToast();
 
     const handleExport = async () => {
         setLoading(true);
+        toast('Generating CSV export...', 'info');
         try {
             const csvData = await exportLeadsAsCsv(filters);
             if (!csvData) {
-                alert('No data to export');
+                toast('No data to export', 'warning');
                 return;
             }
 
@@ -36,9 +44,10 @@ export function ExportButton({ filters }: { filters: any }) {
         <button
             onClick={handleExport}
             disabled={loading}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 text-sm"
+            className="bg-white border-2 border-slate-200 text-slate-700 px-6 py-2 rounded-xl font-bold hover:border-indigo-600 hover:text-indigo-600 transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-2"
         >
-            {loading ? 'Exporting...' : 'Export CSV'}
+            <Download size={16} className={loading ? 'animate-bounce' : ''} />
+            {loading ? 'Generating...' : 'Export Results'}
         </button>
     );
 }

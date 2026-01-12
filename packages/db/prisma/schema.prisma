@@ -11,6 +11,7 @@ model Place {
   id              String   @id @default(uuid())
   placeId         String   @unique
   name            String
+  primaryProblem  String?
   primaryType     String?
   address         String?
   phone           String?
@@ -20,6 +21,7 @@ model Place {
   googleMapsUrl   String?
   lat             Float?
   lng             Float?
+  status          String   @default("NEW") // NEW, CONTACTED, IN_PROGRESS, WON, LOST
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -30,10 +32,12 @@ model Place {
   screenshots     Screenshot[]
   llmVerdicts     LlmVerdict[]
   leadScores      LeadScore[]
+  leadNotes       LeadNote[]
   
   // Indexing for common queries
   @@index([placeId])
   @@index([rating, userRatingCount])
+  @@index([status])
 }
 
 model WebsiteCheck {
@@ -133,11 +137,21 @@ model JobRun {
 }
 
 model DailyUsage {
-  id    String   @id @default(uuid())
-  date  String   // YYYY-MM-DD
-  metric String  // DISCOVER, PSI, LLM, SCREENSHOT
-  count Int      @default(0)
+  id     String   @id @default(uuid())
+  date   String   // YYYY-MM-DD
+  metric String   // DISCOVER, PSI, LLM, SCREENSHOT
+  count  Int      @default(0)
 
   @@unique([date, metric])
+}
+
+model LeadNote {
+  id        String   @id @default(uuid())
+  placeId   String
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([placeId])
 }
 

@@ -24,7 +24,8 @@ export default async function MapPage() {
         lat: l.lat,
         lng: l.lng,
         score: l.leadScores[0]?.score || 0,
-        tier: l.leadScores[0]?.tier || 'A'
+        tier: l.leadScores[0]?.tier || 'A',
+        primaryProblem: (l as any).primaryProblem || "Analysis in progress"
     }));
 
     return (

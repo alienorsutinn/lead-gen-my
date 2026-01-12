@@ -7,8 +7,11 @@ export type LeadFilter = {
     search?: string;
     tier?: string;
     minRating?: number;
+    minReviews?: number;
     hasWebsite?: boolean;
     needsIntervention?: boolean;
+    opportunityType?: 'no_website' | 'broken_website' | 'poor_mobile' | 'seo_opportunity';
+    area?: string;
     limit?: number;
 };
 
@@ -24,20 +27,15 @@ function buildWhere(filters: LeadFilter): Prisma.PlaceWhereInput {
     }
 
     if (filters.minRating) {
-        where.rating = { gte: Number(filters.minRating) };
+        where.rating = { gte: filters.minRating };
     }
 
-    if (filters.hasWebsite !== undefined) {
-        // Handle boolean or string 'true'/'false' if passed from query params generic
-        const val = String(filters.hasWebsite) === 'true';
-        if (val) {
-            where.websiteUrl = { not: null };
-        } else {
-            // If specifically checking for NO website
-            // But if undefined, we don't filter. 
-            // Logic in page passes 'true' or 'false'.
-            if (String(filters.hasWebsite) === 'false') where.websiteUrl = null;
-        }
+    if (filters.minReviews) {
+        where.userRatingCount = { gte: filters.minReviews };
+    }
+
+    if (filters.area) {
+        where.address = { contains: filters.area };
     }
 
     if (filters.tier) {
@@ -46,9 +44,21 @@ function buildWhere(filters: LeadFilter): Prisma.PlaceWhereInput {
         };
     }
 
-    if (filters.needsIntervention !== undefined) {
-        const val = String(filters.needsIntervention) === 'true';
-        where.llmVerdicts = { some: { needsIntervention: val } };
+    if (filters.opportunityType) {
+        if (filters.opportunityType === 'no_website') {
+            where.websiteUrl = null;
+        } else if (filters.opportunityType === 'broken_website') {
+            where.websiteCheck = { status: 'broken' };
+        } else if (filters.opportunityType === 'poor_mobile') {
+            where.llmVerdicts = { some: { needsIntervention: true } };
+        } else if (filters.opportunityType === 'seo_opportunity') {
+            where.llmVerdicts = { some: { offerAngle: { contains: 'seo' } } };
+        }
+    }
+
+    if (filters.hasWebsite !== undefined) {
+        if (String(filters.hasWebsite) === 'true') where.websiteUrl = { not: null };
+        else where.websiteUrl = null;
     }
 
     return where;
@@ -88,8 +98,8 @@ export async function getLeads(page: number = 1, limit: number = 20, filters: Le
             return tierOrder[tierA] - tierOrder[tierB];
         }
 
-        const scoreA = a.leadScores[0]?.score ?? -1;
-        const scoreB = b.leadScores[0]?.score ?? -1;
+        const scoreA = a.leadScores[0]?.score || 0;
+        const scoreB = b.leadScores[0]?.score || 0;
         if (scoreA !== scoreB) return scoreB - scoreA;
 
         const reviewsA = a.userRatingCount || 0;
@@ -112,7 +122,24 @@ export async function getLeadDetails(id: string) {
             llmVerdicts: { orderBy: { createdAt: 'desc' } },
             websiteCheck: true,
             psiAudits: { orderBy: { fetchedAt: 'desc' } },
-            screenshots: true
+            screenshots: true,
+            leadNotes: { orderBy: { createdAt: 'desc' } }
+        }
+    });
+}
+
+export async function updateLeadStatus(id: string, status: string) {
+    return prisma.place.update({
+        where: { id },
+        data: { status }
+    });
+}
+
+export async function addLeadNote(id: string, content: string) {
+    return prisma.leadNote.create({
+        data: {
+            placeId: id,
+            content
         }
     });
 }
@@ -133,7 +160,7 @@ export async function exportLeadsAsCsv(filters: LeadFilter) {
     if (!leads.length) return null;
 
     // Header
-    const header = ['Name', 'Address', 'Phone', 'Rating', 'Reviews', 'Website', 'Tier', 'Score', 'Intervention', 'Angle', 'Reasons'];
+    const header = ['Name', 'Address', 'Phone', 'Rating', 'Reviews', 'Website', 'Tier', 'Score', 'Status', 'Intervention', 'Angle', 'Reasons'];
     const rows = leads.map(l => {
         const score = l.leadScores[0];
         const verdict = l.llmVerdicts[0];
@@ -155,6 +182,7 @@ export async function exportLeadsAsCsv(filters: LeadFilter) {
             l.websiteUrl || '',
             score?.tier || '',
             score?.score?.toString() || '',
+            l.status || 'NEW',
             verdict?.needsIntervention ? 'YES' : 'NO',
             verdict?.offerAngle || '',
             reasons.join('; ')

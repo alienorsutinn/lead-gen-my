@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import { Badge } from './ui/Badge';
 import 'leaflet/dist/leaflet.css';
 
 // Fix for default marker icons in Leaflet + Next.js
@@ -49,18 +49,24 @@ export default function MapComponent({ leads }: { leads: MapLead[] }) {
                 />
                 {validLeads.map(lead => (
                     <Marker key={lead.id} position={[lead.lat!, lead.lng!]}>
-                        <Popup>
-                            <div className="p-1">
-                                <h3 className="font-bold text-sm">{lead.name}</h3>
-                                <div className="text-xs mt-1">
-                                    <span className="font-bold text-blue-600">Score: {lead.score}</span>
-                                    <span className="ml-2 text-gray-500">Tier {lead.tier}</span>
+                        <Popup className="premium-popup">
+                            <div className="p-2 min-w-[200px]">
+                                <Badge variant="info" className="mb-2 text-[8px] py-0">{lead.tier === 'A' ? 'High Priority' : 'Target'}</Badge>
+                                <h3 className="font-black text-slate-900 text-base leading-tight mb-1">{lead.name}</h3>
+                                <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">
+                                    {Math.round(lead.score)}% Growth Potential
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4">
+                                    <label className="text-[8px] font-black uppercase text-indigo-500 tracking-tighter block mb-1">Critical Gap</label>
+                                    <p className="text-[11px] font-bold text-slate-700 leading-snug">
+                                        "{lead.primaryProblem || "Digital experience overhaul recommended."}"
+                                    </p>
                                 </div>
                                 <a
                                     href={`/leads/${lead.id}`}
-                                    className="block mt-2 text-xs text-blue-500 underline"
+                                    className="block w-full text-center bg-slate-900 text-white py-2 rounded-lg text-xs font-bold hover:bg-black transition-all"
                                 >
-                                    View Details
+                                    Open Brief
                                 </a>
                             </div>
                         </Popup>

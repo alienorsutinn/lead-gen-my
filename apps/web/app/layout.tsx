@@ -9,6 +9,8 @@ export const metadata: Metadata = {
     description: 'Automated lead generation dashboard',
 }
 
+import { ToastProvider } from '../components/ui/Toast'
+
 export default function RootLayout({
     children,
 }: {
@@ -17,9 +19,11 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className={inter.className}>
-                <main className="min-h-screen p-4">
-                    {children}
-                </main>
+                <ToastProvider>
+                    <main className="min-h-screen p-4">
+                        {children}
+                    </main>
+                </ToastProvider>
             </body>
         </html>
     )
