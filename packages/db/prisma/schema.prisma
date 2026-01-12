@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Place {
+  id              String   @id @default(uuid())
+  placeId         String   @unique
+  name            String
+  primaryType     String?
+  address         String?
+  phone           String?
+  rating          Float?
+  userRatingCount Int?
+  websiteUrl      String?
+  googleMapsUrl   String?
+  lat             Float?
+  lng             Float?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  websiteCheck    WebsiteCheck?
+  psiAudits       PsiAudit[]
+  screenshots     Screenshot[]
+  llmVerdicts     LlmVerdict[]
+  leadScores      LeadScore[]
+  
+  // Indexing for common queries
+  @@index([placeId])
+  @@index([rating, userRatingCount])
+}
+
+model WebsiteCheck {
+  id            String   @id @default(uuid())
+  placeId       String   @unique
+  place         Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  
+  url           String
+  resolvedUrl   String?
+  status        String   // "ok", "broken", "no_website"
+  https         Boolean  @default(false)
+  httpStatus    Int?
+  errors        String?  // JSON string or text description
+  lastCheckedAt DateTime @default(now())
+
+  @@index([status])
+}
+
+model PsiAudit {
+  id            String   @id @default(uuid())
+  placeId       String
+  place         Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  
+  url           String
+  strategy      String   // "mobile" | "desktop"
+  
+  // Core Vitals (0-100)
+  performance   Int?
+  seo           Int?
+  accessibility Int?
+  bestPractices Int?
+  
+  rawJson       Json?    // Optional full report
+  fetchedAt     DateTime @default(now())
+  
+  @@index([placeId])
+}
+
+model Screenshot {
+  id          String   @id @default(uuid())
+  placeId     String
+  place       Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  
+  url         String
+  viewport    String   // "mobile" | "desktop"
+  pngPath     String
+  createdAt   DateTime @default(now())
+
+  @@index([placeId])
+}
+
+model LlmVerdict {
+  id                  String   @id @default(uuid())
+  placeId             String
+  place               Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  
+  url                 String?
+  needsIntervention   Boolean  @default(false)
+  severity            String?  // "low", "medium", "high"
+  reasons             Json?    // Array of strings
+  quickWins           Json?    // Array of strings
+  offerAngle          String?  // Suggested pitch
+  modelName           String?
+  
+  createdAt           DateTime @default(now())
+
+  @@index([placeId])
+  @@index([needsIntervention])
+}
+
+model LeadScore {
+  id          String   @id @default(uuid())
+  placeId     String
+  place       Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  
+  score       Int      // 0-100
+  tier        String   // "A", "B", "C"
+  breakdown   Json?    // Scoring components
+  computedAt  DateTime @default(now())
+
+  @@index([placeId])
+  @@index([computedAt])
+  @@index([score])
+}
+
+model JobRun {
+  id          String   @id @default(uuid())
+  jobType     String
+  status      String   // "running", "completed", "failed"
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  meta        Json?
+  error       String?
+
+  @@index([jobType, status])
+}

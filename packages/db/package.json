@@ -1,0 +1,25 @@
+{
+    "name": "@lead-gen-my/db",
+    "version": "1.0.0",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "migrate": "dotenv -e ../../.env -- prisma migrate dev",
+        "seed": "dotenv -e ../../.env -- node dist/seed.js",
+        "studio": "dotenv -e ../../.env -- prisma studio",
+        "generate": "prisma generate"
+    },
+    "prisma": {
+        "seed": "dotenv -e ../../.env -- ts-node src/seed.ts"
+    },
+    "dependencies": {
+        "@prisma/client": "^5.7.0"
+    },
+    "devDependencies": {
+        "prisma": "^5.7.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.3.3"
+    }
+}
