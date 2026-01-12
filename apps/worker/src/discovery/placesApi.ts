@@ -18,7 +18,8 @@ interface PlaceResult {
 
 interface PlaceDetails {
     id: string; // This will map to placeId when returning
-    name: string;
+    name: string; // This is the resource name (places/...)
+    displayName?: { text: string; languageCode?: string }; // Correct business name
     primaryType?: string;
     websiteUri?: string;
     nationalPhoneNumber?: string;
@@ -51,7 +52,7 @@ export class GooglePlacesApi {
             await this.rateLimit();
             try {
                 const response = await fetch(url, options);
-                
+
                 if (response.status === 429 || response.status >= 500) {
                     const backoff = Math.pow(2, i) * 1000 + Math.random() * 1000;
                     console.log(`Request failed with status ${response.status}. Retrying in ${backoff.toFixed(0)}ms...`);
@@ -67,16 +68,16 @@ export class GooglePlacesApi {
                 return await response.json();
             } catch (error) {
                 if (i === retries - 1) throw error;
-                 const backoff = Math.pow(2, i) * 1000 + Math.random() * 1000;
-                 console.log(`Request threw error. Retrying in ${backoff.toFixed(0)}ms... Error: ${error}`);
-                 await new Promise(resolve => setTimeout(resolve, backoff));
+                const backoff = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                console.log(`Request threw error. Retrying in ${backoff.toFixed(0)}ms... Error: ${error}`);
+                await new Promise(resolve => setTimeout(resolve, backoff));
             }
         }
     }
 
     async textSearch(query: string, regionCode = 'MY', languageCode = 'en'): Promise<PlaceResult[]> {
         const url = 'https://places.googleapis.com/v1/places:searchText';
-        
+
         const body = {
             textQuery: query,
             regionCode: regionCode,
@@ -88,7 +89,7 @@ export class GooglePlacesApi {
             headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY || '',
-                'X-Goog-FieldMask': 'places.name,places.id,places.primaryType'
+                'X-Goog-FieldMask': 'places.id,places.displayName,places.primaryType'
             },
             body: JSON.stringify(body)
         };
@@ -96,10 +97,10 @@ export class GooglePlacesApi {
         try {
             const data = await this.fetchWithRetry(url, options);
             if (!data.places) return [];
-            
+
             return data.places.map((p: any) => ({
                 placeId: p.id,
-                name: p.name,
+                name: p.displayName?.text,     // ✅ correct
                 primaryType: p.primaryType
             }));
         } catch (err) {
@@ -110,11 +111,11 @@ export class GooglePlacesApi {
 
     async getPlaceDetails(placeId: string): Promise<PlaceDetails | null> {
         const url = `https://places.googleapis.com/v1/places/${placeId}`;
-        
+
         // Fields we want to fetch
         const fields = [
             'id',
-            'name',
+            'displayName',
             'primaryType',
             'websiteUri',
             'nationalPhoneNumber',

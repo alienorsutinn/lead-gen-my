@@ -33,24 +33,21 @@ export const calculateLeadScore = (input: ScoreInput): ScoreResult => {
         breakdown['high_rating'] = 10;
     }
 
-    // Review Volume Strength
-    if ((input.userRatingCount || 0) >= 200) {
-        score += 20;
-        breakdown['high_review_volume'] = 20;
-    } else if ((input.userRatingCount || 0) >= 50) {
+    // Review Volume Strength (Social Proof)
+    if ((input.userRatingCount || 0) >= 100) {
         score += 10;
-        breakdown['medium_review_volume'] = 10;
+        breakdown['high_review_volume'] = 10;
     }
 
     // --- Digital Weakness (Opportunity) ---
 
     // Website Availability
     if (!input.websiteUrl || input.websiteCheck?.status === 'no_website') {
-        score += 35;
-        breakdown['no_website'] = 35;
+        score += 50;
+        breakdown['no_website'] = 50;
     } else if (input.websiteCheck?.status === 'broken') {
-        score += 25;
-        breakdown['broken_website'] = 25;
+        score += 40;
+        breakdown['broken_website'] = 40;
     } else {
         // Only check detailed metrics if website exists and works
 
@@ -73,9 +70,10 @@ export const calculateLeadScore = (input: ScoreInput): ScoreResult => {
         }
 
         // LLM Verdict
+        // Heavily weighted as this is the "intelligence" layer saying "YES, sell to them"
         if (input.llmVerdict?.needsIntervention) {
-            score += 15;
-            breakdown['llm_flagged'] = 15;
+            score += 30;
+            breakdown['llm_flagged'] = 30;
         }
     }
 
@@ -84,8 +82,8 @@ export const calculateLeadScore = (input: ScoreInput): ScoreResult => {
 
     // Tier
     let tier: 'A' | 'B' | 'C' = 'C';
-    if (score >= 80) tier = 'A';
-    else if (score >= 60) tier = 'B';
+    if (score >= 70) tier = 'A';
+    else if (score >= 50) tier = 'B';
 
     return {
         score,

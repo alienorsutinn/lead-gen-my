@@ -21,7 +21,7 @@ export class DiscoveryService {
                         where: { placeId: details.id },
                         create: {
                             placeId: details.id,
-                            name: details.name,
+                            name: details.displayName?.text ?? details.id,
                             primaryType: details.primaryType || null,
                             address: details.formattedAddress || null,
                             phone: details.nationalPhoneNumber || null,
@@ -33,7 +33,7 @@ export class DiscoveryService {
                             lng: details.location?.longitude || null,
                         },
                         update: {
-                            name: details.name,
+                            name: details.displayName?.text ?? details.id,
                             primaryType: details.primaryType || null,
                             address: details.formattedAddress || null,
                             phone: details.nationalPhoneNumber || null,

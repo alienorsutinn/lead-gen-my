@@ -23,6 +23,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: any })
                         hasWebsite: searchParams.hasWebsite === 'true' ? true : (searchParams.hasWebsite === 'false' ? false : undefined),
                         minRating: searchParams.minRating
                     }} />
+                    <Link href="/map" className="bg-green-600 text-white p-2 rounded hover:bg-green-700 flex items-center gap-2">
+                        View Map
+                    </Link>
                     <Link href="/" className="text-blue-600 underline">Back Home</Link>
                 </div>
             </div>
@@ -58,6 +61,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: any })
                             <th className="p-3 text-left">Tier</th>
                             <th className="p-3 text-left">Intervention?</th>
                             <th className="p-3 text-left">Angle</th>
+                            <th className="p-3 text-left">Reason</th>
                             <th className="p-3 text-left">Action</th>
                         </tr>
                     </thead>
@@ -66,6 +70,24 @@ export default async function LeadsPage({ searchParams }: { searchParams: any })
                             const score = lead.leadScores[0];
                             const verdict = lead.llmVerdicts[0];
                             const site = lead.websiteCheck;
+
+                            // Extract Top Reason
+                            let topReason = '-';
+                            if (verdict?.reasons) {
+                                try {
+                                    const parsed = JSON.parse(verdict.reasons);
+                                    if (Array.isArray(parsed) && parsed.length > 0) topReason = parsed[0];
+                                } catch (e) { }
+                            } else if (score?.breakdown) {
+                                // Fallback to breakdown if no LLM verdict yet
+                                try {
+                                    const bd = JSON.parse(score.breakdown);
+                                    if (bd.no_website) topReason = "No website";
+                                    else if (bd.llm_flagged) topReason = "AI intervention";
+                                    else if (bd.low_seo) topReason = "Poor SEO";
+                                } catch (e) { }
+                            }
+
                             return (
                                 <tr key={lead.id} className="border-t hover:bg-gray-50">
                                     <td className="p-3">
@@ -74,13 +96,17 @@ export default async function LeadsPage({ searchParams }: { searchParams: any })
                                     </td>
                                     <td className="p-3">{lead.rating} ({lead.userRatingCount})</td>
                                     <td className="p-3 text-sm">
-                                        {site ? (
-                                            <span className={site.status === 'ok' ? 'text-green-600' : 'text-red-500'}>
-                                                {site.status}
-                                            </span>
-                                        ) : 'Pending'}
+                                        {(() => {
+                                            if (!lead.websiteUrl) return <span className="text-red-600 font-bold">No website</span>;
+                                            if (!site) return <span className="text-gray-400">Pending</span>;
+                                            return (
+                                                <span className={site.status === 'ok' ? 'text-green-600' : 'text-orange-500'}>
+                                                    {site.status === 'broken' ? 'Broken' : site.status}
+                                                </span>
+                                            );
+                                        })()}
                                     </td>
-                                    <td className="p-3">{score?.score || '-'}</td>
+                                    <td className="p-3 font-bold">{score?.score || '-'}</td>
                                     <td className="p-3">
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${score?.tier === 'A' ? 'bg-green-100 text-green-800' :
                                             score?.tier === 'B' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100'
@@ -95,7 +121,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: any })
                                             <span className="text-gray-400">No</span>
                                         )}
                                     </td>
-                                    <td className="p-3 text-sm">{verdict?.offerAngle || '-'}</td>
+                                    <td className="p-3 text-sm italic">{verdict?.offerAngle?.replace(/_/g, ' ') || '-'}</td>
+                                    <td className="p-3 text-xs text-gray-600 max-w-[150px] truncate" title={topReason}>
+                                        {topReason}
+                                    </td>
                                     <td className="p-3">
                                         <Link href={`/leads/${lead.id}`} className="text-blue-600 hover:underline">
                                             View

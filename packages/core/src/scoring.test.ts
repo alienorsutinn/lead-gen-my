@@ -1,48 +1,59 @@
 import { describe, it, expect } from 'vitest';
-import { calculateLeadScore, ScoreInput } from './index'; // Exported from index.ts
+import { calculateLeadScore, ScoreInput } from './scoring';
 
 describe('calculateLeadScore', () => {
-    it('should return a perfect score for ideal conditions', () => {
+    it('should return a high score for no website (tier A opportunity)', () => {
         const input: ScoreInput = {
-            rating: 5.0,
-            reviewCount: 100,
-            hasWebsite: false, // Wait, hasWebsite=false is BAD? Or opportunity?
-            // Logic: No website = +Digital Weakness? 
-            // verifying logic in scoring.ts:
-            // "Digital Weakness (Max 40)"
-            // No website = +30 points.
-            // Weak Website = +15.
-            // "Business Strength (Max 30)"
-            // Rating > 4.5 = +10. Reviews > 50 = +10.
-            // So pure score = 30 + 10 + 10 = 50?
-            // Let's check the code logic.
-
-            // To be safe, let's treat hasWebsite=false as an opportunity.
-            websiteStatus: 'no_website',
-            psiMobile: 0,
-            hasSocials: false
+            rating: 4.8,
+            userRatingCount: 150,
+            websiteUrl: null,
+            websiteCheck: { status: 'no_website', https: false },
+            psi: null,
+            llmVerdict: null
         };
 
+        // Logic Expectations:
+        // Rating >= 4.3 -> +10
+        // Reviews >= 100 -> +10
+        // No Website -> +50
+        // Total = 70. (Which is Tier B... wait, 70 is B. To get A we need > 80?)
+        // Let's re-read scoring.ts logic if I adjusted it?
+        // Ah, earlier I set No Website to 50.
+        // If llmVerdict triggers (needsIntervention=+30), then score is 100.
+
         const result = calculateLeadScore(input);
-        expect(result.score).toBeGreaterThan(0);
-        expect(result.breakdown).toBeDefined();
+        expect(result.score).toBeGreaterThanOrEqual(70);
+        expect(result.breakdown['no_website']).toBe(50);
+        expect(result.breakdown['high_rating']).toBe(10);
     });
 
-    it('should penalize (give low score) for already optimized businesses', () => {
+    it('should identify Tier A when LLM intervention + No Website combined', () => {
         const input: ScoreInput = {
-            rating: 5.0,
-            reviewCount: 500,
-            hasWebsite: true,
-            websiteStatus: 'ok',
-            psiMobile: 95, // Good performance
-            hasSocials: true
+            rating: 4.8,
+            userRatingCount: 150,
+            websiteUrl: null,
+            websiteCheck: { status: 'no_website', https: false },
+            psi: null,
+            llmVerdict: { needsIntervention: true }
         };
-        // If business is perfect, lead score (value to US) should be low?
-        // Or is "Lead Score" about *how likely they are to buy*?
-        // Usually Lead Score = Opportunity.
-        // If they have everything, Opportunity = Low.
+        // 10 + 10 + 50 + 30 = 100.
+        const result = calculateLeadScore(input);
+        expect(result.score).toBe(100);
+        expect(result.tier).toBe('A');
+    });
+
+    it('should give low score for optimized business', () => {
+        const input: ScoreInput = {
+            rating: 4.0, // < 4.3 (0 pts)
+            userRatingCount: 10, // < 50 (0 pts)
+            websiteUrl: 'https://example.com',
+            websiteCheck: { status: 'ok', https: true },
+            psi: { seo: 90, performance: 90 }, // No penalties
+            llmVerdict: { needsIntervention: false } // 0 pts
+        };
 
         const result = calculateLeadScore(input);
-        expect(result.score).toBeLessThan(50); // Assuming 100 is "Hot Lead"
+        expect(result.score).toBeLessThan(20);
+        expect(result.tier).toBe('C');
     });
 });

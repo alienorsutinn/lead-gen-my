@@ -17,8 +17,8 @@ function buildWhere(filters: LeadFilter): Prisma.PlaceWhereInput {
 
     if (filters.search) {
         where.OR = [
-            { name: { contains: filters.search, mode: 'insensitive' } },
-            { address: { contains: filters.search, mode: 'insensitive' } }
+            { name: { contains: filters.search } },
+            { address: { contains: filters.search } }
         ];
     }
 
@@ -45,8 +45,10 @@ function buildWhere(filters: LeadFilter): Prisma.PlaceWhereInput {
         };
     }
 
-    // needsIntervention check
-    // if (filters.needsIntervention) ...
+    if (filters.needsIntervention !== undefined) {
+        const val = String(filters.needsIntervention) === 'true';
+        where.llmVerdicts = { some: { needsIntervention: val } };
+    }
 
     return where;
 }
@@ -62,14 +64,23 @@ export async function getLeads(page: number = 1, limit: number = 20, filters: Le
                 llmVerdicts: { orderBy: { createdAt: 'desc' }, take: 1 },
                 websiteCheck: true
             },
-            skip: (page - 1) * limit,
-            take: limit,
+            // skip: (page - 1) * limit, // Pagination breaks sorting so we fetch all matching constraints then sort/slice
+            // For MVP this is fine if total < 500. If > 500, we should sort in SQL or accept partial sort.
+            // Following user hack: "fetch the leads including latest score, sort in JS"
+            // We'll keep limits for safety but move slice after.
+            take: 500, // Fetch more to sort
             orderBy: { createdAt: 'desc' }
         }),
         prisma.place.count({ where })
     ]);
 
-    return { data, total, page, limit };
+    // Sort by Score (Desc)
+    data.sort((a, b) => (b.leadScores[0]?.score ?? -1) - (a.leadScores[0]?.score ?? -1));
+
+    // Manual Pagination Slice
+    const paginatedData = data.slice((page - 1) * limit, page * limit);
+
+    return { data: paginatedData, total, page, limit };
 }
 
 export async function getLeadDetails(id: string) {
